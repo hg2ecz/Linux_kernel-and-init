@@ -21,10 +21,10 @@ run_eth:
 	sudo qemu-system-x86_64 -kernel kernel/bzImage -initrd initrd.img $(BOOTPARAM) $(ETH) -smp 2 -m 64
 
 rundeb:
-	qemu-system-x86_64 -kernel kernel/bzImage-deb -initrd initrd.img $(BOOTPARAM) -smp 2 -m 128
+	qemu-system-x86_64 -kernel kernel/bzImage-debian12 -initrd initrd.img $(BOOTPARAM) -smp 2 -m 128
 
 rundeb_eth:
-	sudo qemu-system-x86_64 -kernel kernel/bzImage-debian -initrd initrd.img $(BOOTPARAM) $(ETH) -smp 2 -m 128
+	sudo qemu-system-x86_64 -kernel kernel/bzImage-debian12 -initrd initrd.img $(BOOTPARAM) $(ETH) -smp 2 -m 128
 
 clean:
 	cargo clean
