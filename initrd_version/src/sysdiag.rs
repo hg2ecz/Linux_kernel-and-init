@@ -7,7 +7,7 @@ use std::thread;
 pub struct Diag {}
 
 impl Diag {
-    pub fn new() -> Self {
+    pub fn new(port: u16) -> Self {
         let msrc = CString::new("proc").unwrap();
         let mdst = CString::new("proc").unwrap();
         let mtype = CString::new("proc").unwrap();
@@ -22,7 +22,7 @@ impl Diag {
             );
         }
         thread::spawn(move || {
-            let listener = TcpListener::bind(":::7878").unwrap();
+            let listener = TcpListener::bind(format!(":::{port}")).unwrap();
 
             for stream in listener.incoming() {
                 handle_client(stream.unwrap());
@@ -33,7 +33,7 @@ impl Diag {
 }
 
 fn handle_client(mut stream: TcpStream) {
-    stream.write_all("meminfo reboot\n".as_bytes()).unwrap();
+    stream.write_all(b"meminfo reboot\n").unwrap();
     //stream.flush().unwrap();
     let mut reader = BufReader::new(&mut stream);
     let mut buffer = String::new();
@@ -47,7 +47,7 @@ fn handle_client(mut stream: TcpStream) {
                     }
                 }
                 "reboot" => {
-                    stream.write_all("System reboot ...\n".as_bytes()).unwrap();
+                    stream.write_all(b"System reboot ...\n").unwrap();
                     let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
                 }
                 _ => stream

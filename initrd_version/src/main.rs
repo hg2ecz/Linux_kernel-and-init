@@ -6,7 +6,7 @@ mod sysdiag;
 fn main() {
     println!("Hello, world from Rust!");
     let _ = set_ethernet::set_interface_up("eth0"); // ifup
-    sysdiag::Diag::new(); // TCP diag port
+    sysdiag::Diag::new(7878); // TCP diag port
 
     // 1s delay
     let sleep_time = time::Duration::from_millis(1000);
