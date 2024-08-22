@@ -30,7 +30,7 @@ impl Diag {
 fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut stream = stream; // Now we have a separate mutable stream for writing
-    writeln!(stream, "meminfo loadavg listproc reboot pwroff quit\n")?;
+    writeln!(stream, "meminfo loadavg proc reboot pwroff quit")?;
 
     loop {
         let mut buf = String::new();
@@ -49,16 +49,16 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
                             writeln!(stream, "{buf}")?;
                         }
                     }
-                    "listproc" => {
+                    "proc" => {
                         writeln!(stream, "{}", listproc_only_numeric())?;
                     }
                     "reboot" => {
-                        writeln!(stream, "System reboot ...\n")?;
+                        writeln!(stream, "System reboot ...")?;
                         stream.shutdown(Shutdown::Both)?;
                         let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
                     }
                     "pwroff" => {
-                        writeln!(stream, "System poweroff ...\n")?;
+                        writeln!(stream, "System poweroff ...")?;
                         stream.shutdown(Shutdown::Both)?;
                         let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
                     }
@@ -67,7 +67,7 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
                         break;
                     }
                     _ => {
-                        writeln!(stream, "Unknown command: {cmd}\n")?;
+                        writeln!(stream, "Unknown command: {cmd}")?;
                     }
                 }
             }
@@ -99,6 +99,27 @@ fn proc_statusgen(s: &str) -> String {
                     if val == "1" {
                         pinf += " KERNEL ";
                     }
+                }
+                "Threads" => {
+                    pinf += &format!(" Threads: {val:8}");
+                }
+                "VmData" => {
+                    pinf += &format!(" VmData: {val:8}");
+                }
+                "VmStk" => {
+                    pinf += &format!(" VmStk: {val:8}");
+                }
+                "VmExe" => {
+                    pinf += &format!(" VmExe: {val:8}");
+                }
+                "VmLib" => {
+                    pinf += &format!(" VmLib: {val:8}");
+                }
+                "VmPTE" => {
+                    pinf += &format!(" VmPTE: {val:8}");
+                }
+                "VmSwap" => {
+                    pinf += &format!(" VmSwap: {val:8}");
                 }
                 _ => (),
             }
