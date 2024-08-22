@@ -15,7 +15,7 @@ fn main() {
     let files = ["/proc/net/dev", "/proc/net/if_inet6"];
     for file in files {
         if let Ok(buf) = sysdiag::read_diag(file) {
-            println!("{file}: {buf}");
+            println!("{file}:\n{buf}");
         }
     }
 
