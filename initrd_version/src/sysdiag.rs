@@ -33,7 +33,7 @@ impl Diag {
 }
 
 fn handle_client(mut stream: TcpStream) {
-    stream.write_all(b"meminfo reboot\n").unwrap();
+    stream.write_all(b"meminfo reboot pwroff\n").unwrap();
     //stream.flush().unwrap();
     let mut reader = BufReader::new(&mut stream);
     let mut buffer = String::new();
@@ -49,6 +49,10 @@ fn handle_client(mut stream: TcpStream) {
                 "reboot" => {
                     stream.write_all(b"System reboot ...\n").unwrap();
                     let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
+                }
+                "pwroff" => {
+                    stream.write_all(b"System poweroff ...\n").unwrap();
+                    let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
                 }
                 _ => stream
                     .write_all("Unknown command: {cmd}\n".as_bytes())
