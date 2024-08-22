@@ -19,54 +19,65 @@ impl Diag {
         thread::spawn(move || {
             let listener = TcpListener::bind(format!(":::{port}")).unwrap();
 
-            for stream in listener.incoming() {
-                handle_client(stream.unwrap());
+            for tcpstream in listener.incoming() {
+                let _ = handle_client(tcpstream.unwrap());
             }
         });
         Diag {}
     }
 }
 
-fn handle_client(mut stream: TcpStream) {
-    stream.write_all(b"meminfo loadavg listproc reboot pwroff\n").unwrap();
-    let mut reader = BufReader::new(&mut stream);
-    let mut buffer = String::new();
-    match reader.read_line(&mut buffer) {
-        Ok(_) => {
-            let cmd = buffer.trim();
-            match cmd {
-                "meminfo" => {
-                    if let Ok(buf) = fs::read_to_string("/proc/meminfo") {
-                        let _ = stream.write_all(buf.as_bytes());
+fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
+    let mut reader = BufReader::new(stream.try_clone()?);
+    let mut stream = stream; // Now we have a separate mutable stream for writing
+    writeln!(stream, "meminfo loadavg listproc reboot pwroff quit\n")?;
+
+    loop {
+        let mut buf = String::new();
+        match reader.read_line(&mut buf) {
+            Ok(0) => break,
+            Ok(_) => {
+                let cmd = buf.trim();
+                match cmd {
+                    "meminfo" => {
+                        if let Ok(buf) = fs::read_to_string("/proc/meminfo") {
+                            writeln!(stream, "{buf}")?;
+                        }
                     }
-                }
-                "loadavg" => {
-                    if let Ok(buf) = fs::read_to_string("/proc/loadavg") {
-                        let _ = stream.write_all(buf.as_bytes());
+                    "loadavg" => {
+                        if let Ok(buf) = fs::read_to_string("/proc/loadavg") {
+                            writeln!(stream, "{buf}")?;
+                        }
                     }
-                }
-                "listproc" => {
-                    let _ = stream.write_all(listproc_only_numeric().as_bytes());
-                }
-                "reboot" => {
-                    let _ = stream.write_all(b"System reboot ...\n");
-                    let _ = stream.shutdown(Shutdown::Both);
-                    let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
-                }
-                "pwroff" => {
-                    let _ = stream.write_all(b"System poweroff ...\n");
-                    let _ = stream.shutdown(Shutdown::Both);
-                    let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
-                }
-                _ => {
-                    let _ = stream.write_all("Unknown command: {cmd}\n".as_bytes());
+                    "listproc" => {
+                        writeln!(stream, "{}", listproc_only_numeric())?;
+                    }
+                    "reboot" => {
+                        writeln!(stream, "System reboot ...\n")?;
+                        stream.shutdown(Shutdown::Both)?;
+                        let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
+                    }
+                    "pwroff" => {
+                        writeln!(stream, "System poweroff ...\n")?;
+                        stream.shutdown(Shutdown::Both)?;
+                        let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
+                    }
+                    "quit" => {
+                        stream.shutdown(Shutdown::Both)?;
+                        break;
+                    }
+                    _ => {
+                        writeln!(stream, "Unknown command: {cmd}\n")?;
+                    }
                 }
             }
-        }
-        Err(e) => {
-            println!("Failed to read from the stream: {}", e);
+            Err(e) => {
+                println!("Failed to read from the client: {}", e);
+                break;
+            }
         }
     }
+    Ok(())
 }
 
 fn listproc_only_numeric() -> String {
