@@ -4,12 +4,13 @@ mod set_ethernet;
 mod sysdiag;
 
 fn main() {
-    println!("Hello, world from Rust!");
+    let diag_port = 7878;
+    println!("\nHello, world from Rust! Diag TCP port: {diag_port}");
     let _ = set_ethernet::set_interface_up("eth0"); // ifup
-    sysdiag::Diag::new(7878); // TCP diag port
+    sysdiag::Diag::new(diag_port); // TCP diag port
 
     // 1s delay
-    let sleep_time = time::Duration::from_millis(1000);
+    let sleep_time = time::Duration::from_millis(2000);
     thread::sleep(sleep_time);
 
     let files = ["/proc/net/dev", "/proc/net/if_inet6"];
