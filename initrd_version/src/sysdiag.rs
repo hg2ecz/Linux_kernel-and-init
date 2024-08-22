@@ -80,6 +80,33 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
     Ok(())
 }
 
+fn proc_statusgen(s: &str) -> String {
+    let mut pinf = String::new();
+    if let Ok(content_str) = read_to_string(format!("{s}/status")) {
+        for c in content_str.split("\n") {
+            let mut spl = c.split(":");
+            let Some(key) = spl.next() else { break };
+            let Some(val) = spl.next() else { break };
+            let val = val.trim();
+            match key {
+                "Name" => {
+                    pinf += &format!("Name: {val:32}");
+                }
+                "VmRSS" => {
+                    pinf += &format!(" VmRSS: {val:8}");
+                }
+                "Kthread" => {
+                    if val == "1" {
+                        pinf += " KERNEL ";
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    format!("{s:<10} {pinf}\n")
+}
+
 fn listproc_only_numeric() -> String {
     let mut txt = String::new();
     let path = Path::new("/proc");
@@ -91,14 +118,7 @@ fn listproc_only_numeric() -> String {
                     if let Some(file_name_str) = file_name.to_str() {
                         if file_name_str.chars().next().map_or(false, |c| c.is_numeric()) {
                             let s = path.display().to_string();
-                            if let Ok(content_str) = read_to_string(format!("{s}/status")) {
-                                let mut content = content_str.split("\n");
-                                if let Some(name) = content.next() {
-                                    txt += &format!("{s:<10} {name}\n");
-                                } else {
-                                    txt += &format!("{s}");
-                                }
-                            }
+                            txt += &proc_statusgen(&s);
                         }
                     }
                 }
