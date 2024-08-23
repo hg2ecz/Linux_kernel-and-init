@@ -1,10 +1,6 @@
-use libc::{c_char, c_int, c_short, AF_INET, SOCK_DGRAM};
+use libc::{c_char, c_short, AF_INET, SOCK_DGRAM};
 use std::ffi::CString;
 use std::io;
-
-const SIOCGIFFLAGS: c_int = 0x8913;
-const SIOCSIFFLAGS: c_int = 0x8914;
-const IFF_UP: c_short = 0x1;
 
 #[repr(C)]
 struct Ifreq {
@@ -27,13 +23,13 @@ pub fn set_interface_up(interface_name: &str) -> io::Result<()> {
         ifr.ifr_name[i] = c as c_char;
     }
     unsafe {
-        if libc::ioctl(sock, SIOCGIFFLAGS, &mut ifr) < 0 {
+        if libc::ioctl(sock, 0x8913, &mut ifr) < 0 {
             return Err(io::Error::last_os_error());
         }
     }
-    ifr.ifr_flags |= IFF_UP;
+    ifr.ifr_flags |= 1;
     unsafe {
-        if libc::ioctl(sock, SIOCSIFFLAGS, &ifr) < 0 {
+        if libc::ioctl(sock, 0x8914, &ifr) < 0 {
             return Err(io::Error::last_os_error());
         }
     }

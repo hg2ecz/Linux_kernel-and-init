@@ -1,9 +1,11 @@
 use std::ffi::CString;
 use std::fs::{self, read_to_string};
 use std::io::{BufRead, BufReader, Write};
-use std::net::{Shutdown, TcpListener, TcpStream};
+use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
 use std::path::Path;
+use std::str::FromStr;
 use std::thread;
+use std::time::Duration;
 
 pub struct Diag {}
 
@@ -23,6 +25,31 @@ impl Diag {
                 let _ = handle_client(tcpstream.unwrap());
             }
         });
+
+        // 1s delay
+        let sleep_time = Duration::from_millis(1500);
+        thread::sleep(sleep_time);
+
+        if let Ok(buf) = read_to_string("/proc/net/dev") {
+            println!("/proc/net/dev:\n{buf}");
+        }
+        if let Ok(buf) = read_to_string("/proc/net/if_inet6") {
+            for row in buf.split("\n") {
+                if let Some(s) = row.split(' ').next() {
+                    let ipv6_str = s.chars().enumerate().fold(String::new(), |mut acc, (i, c)| {
+                        if i > 0 && i % 4 == 0 {
+                            acc.push(':');
+                        }
+                        acc.push(c);
+                        acc
+                    });
+                    if let Ok(ipv6) = IpAddr::from_str(&ipv6_str) {
+                        println!("IPv6 addr: {ipv6}");
+                    }
+                }
+            }
+        }
+        println!();
         Diag {}
     }
 }
@@ -129,24 +156,17 @@ fn listproc_only_numeric() -> String {
     let mut txt = String::new();
     let path = Path::new("/proc");
     if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if let Some(file_name) = path.file_name() {
-                    if let Some(file_name_str) = file_name.to_str() {
-                        if file_name_str.chars().next().map_or(false, |c| c.is_numeric()) {
-                            let s = path.display().to_string();
-                            txt += &proc_statusgen(&s);
-                        }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(file_name) = path.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    if file_name_str.chars().next().map_or(false, |c| c.is_numeric()) {
+                        let s = path.display().to_string();
+                        txt += &proc_statusgen(&s);
                     }
                 }
             }
         }
     }
     txt
-}
-
-//fn read_diag(mut stream: TcpStream, diagfile: &str) {
-pub fn read_diag(diagfile: &str) -> Result<String, std::io::Error> {
-    read_to_string(diagfile)
 }
