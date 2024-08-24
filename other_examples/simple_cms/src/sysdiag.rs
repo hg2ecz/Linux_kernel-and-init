@@ -9,13 +9,14 @@ use std::time::Duration;
 
 pub struct Diag {}
 
-fn mount(src: &str, dst: &str, tpe: &str, size: Option<i32>) {
+fn mount(src: &str, dst: &str, tpe: &str, size: Option<u32>) {
     let msrc = CString::new(src).unwrap();
     let mdst = CString::new(dst).unwrap();
     let mtype = CString::new(tpe).unwrap();
     let mflags = libc::MS_NOSUID | libc::MS_NODEV | libc::MS_NOEXEC;
+    let opt;
     let moptions = if let Some(val) = size {
-        let opt = CString::new(format!("size={val}")).unwrap();
+        opt = CString::new(format!("size={val}")).unwrap();
         opt.as_ptr() as *const libc::c_void
     } else {
         std::ptr::null()
