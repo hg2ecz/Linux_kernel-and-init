@@ -1,0 +1,19 @@
+[package]
+name = "init"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4"
+libc="0.2"
+
+actix-web = "4.9"
+actix-rt = "2.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+mysql = "25.0"
+tera = "1.20"
+dotenv = "0.15"
+
+[profile.release]
+strip = true
