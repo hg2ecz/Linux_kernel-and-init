@@ -1,0 +1,21 @@
+[package]
+name = "init"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+#chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+libc="0.2"
+
+actix-web = "4.0"
+actix-multipart = "0.4"
+diesel = { version = "2.0", features = ["mysql"] }
+serde = { version = "1.0", features = ["derive"] }
+tera = "1.15"
+dotenv = "0.15"
+uuid = "1.0"
+futures-util = "0.3"
+
+[profile.release]
+strip = true
