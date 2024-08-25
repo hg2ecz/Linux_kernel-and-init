@@ -11,5 +11,4 @@ This is a minimal example, how can running system with only a Linux kernel and s
 
 For example:
 
-[initonly_as_isolator.png]
-
+![Isolated system](initonly_as_isolator.png)
