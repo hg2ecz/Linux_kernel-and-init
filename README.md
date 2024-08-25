@@ -12,3 +12,13 @@ This is a minimal example, how can running system with only a Linux kernel and s
 For example:
 
 ![Isolated system](initonly_as_isolator.png)
+
+## What is sysdiag?
+
+It serve some status information in a TCP port.
+
+    $ echo -e "mounts\n loadavg\n proc\n meminfo" | nc IPv4_or_IPv6_addr 7878
+
+For shutdown this VM:
+
+    $ echo "pwroff" | nc IPv4_or_IPv6_addr 7878
