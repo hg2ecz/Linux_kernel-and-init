@@ -1,8 +1,11 @@
+use std::collections::VecDeque;
 use std::ffi::CString;
-use std::fs::{self, read_to_string};
-use std::io::{BufRead, BufReader, Write};
+use std::fs::{self, read_to_string, DirEntry};
+use std::io::{self, BufRead, BufReader, Write};
 use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
@@ -57,7 +60,17 @@ impl Diag {
 fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut stream = stream; // Now we have a separate mutable stream for writing
-    let valid_commands = ["meminfo", "loadavg", "proc", "mounts", "reboot", "pwroff", "quit"];
+    let valid_commands = [
+        "meminfo",
+        "loadavg",
+        "proc",
+        "mounts",
+        "listfiles",
+        "version",
+        "reboot",
+        "pwroff",
+        "quit",
+    ];
     writeln!(stream, "{}", valid_commands.join(" "))?;
 
     loop {
@@ -79,6 +92,9 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
                         writeln!(stream, "System poweroff ...")?;
                         stream.shutdown(Shutdown::Both)?;
                         let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
+                    }
+                    "listfiles" => {
+                        let _ = listfiles(&mut stream);
                     }
                     "quit" => {
                         stream.shutdown(Shutdown::Both)?;
@@ -169,4 +185,67 @@ fn listproc_only_numeric() -> String {
         }
     }
     txt
+}
+
+fn listfiles(stream: &mut TcpStream) -> io::Result<()> {
+    let mut dirs_to_visit: VecDeque<PathBuf> = VecDeque::new();
+    dirs_to_visit.push_back("/".into());
+
+    while let Some(current_dir) = dirs_to_visit.pop_front() {
+        if current_dir == Path::new("/proc") || current_dir == Path::new("/sys") {
+            continue;
+        }
+        let _ = writeln!(stream, "{}:", current_dir.display());
+        let entries = fs::read_dir(&current_dir)?;
+
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                // Add the directory to the queue to visit later
+                dirs_to_visit.push_back(path.clone());
+            }
+
+            display_metadata(&entry, stream)?;
+        }
+    }
+    Ok(())
+}
+
+fn display_metadata(entry: &DirEntry, stream: &mut TcpStream) -> io::Result<()> {
+    let metadata = entry.metadata()?;
+    let file_type = if metadata.is_dir() {
+        "d"
+    } else if metadata.is_file() {
+        "-"
+    } else if metadata.is_symlink() {
+        "l"
+    } else {
+        "?"
+    };
+
+    // Permissions in numeric form
+    let permissions = metadata.permissions().mode() & 0o777;
+
+    // User ID and Group ID
+    let user_id = metadata.uid();
+    let group_id = metadata.gid();
+
+    // File size
+    let file_size = metadata.len();
+
+    // Display the information
+    let _ = writeln!(
+        stream,
+        "{} {:o} {} {} {} {}",
+        file_type,
+        permissions,
+        user_id,
+        group_id,
+        file_size,
+        entry.path().display()
+    );
+
+    Ok(())
 }
