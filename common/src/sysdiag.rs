@@ -197,7 +197,7 @@ fn listfiles(stream: &mut TcpStream) -> io::Result<()> {
     let mut dirs_to_visit: VecDeque<PathBuf> = VecDeque::new();
     dirs_to_visit.push_back("/".into());
 
-    let _ = writeln!(stream, "   TYPE PERM UID GID    SIZE(kB)  FILENAME");
+    let _ = writeln!(stream, "   TYPE PERM UID GID      SIZE      FILENAME");
     while let Some(current_dir) = dirs_to_visit.pop_front() {
         if current_dir == Path::new("/proc") || current_dir == Path::new("/sys") {
             continue;
@@ -243,12 +243,21 @@ fn display_metadata(entry: &DirEntry, stream: &mut TcpStream) -> io::Result<()> 
     let permissions = metadata.permissions().mode() & 0o777;
     let user_id = metadata.uid();
     let group_id = metadata.gid();
-    let file_size = metadata.len();
+    let fsize = metadata.len();
+    let file_size = match fsize {
+        ..1024 => format!("{fsize}"),
+        1024..1048576 => format!("{:.1} kB", fsize as f64 / 1024.),
+        1048576.. => format!("{:.1} MB", fsize as f64 / 1024. / 1024.),
+    };
+    let mut filename = entry.path().display().to_string();
+    if file_type == "link" {
+        if let Ok(target_path) = fs::read_link(entry.path()) {
+            filename = format!("{filename} -> {}", target_path.display());
+        }
+    }
     let _ = writeln!(
         stream,
-        "   {file_type} {permissions:o} {user_id:4} {group_id:4} {:6} kB  {}",
-        file_size / 1024,
-        entry.path().display()
+        "   {file_type} {permissions:o} {user_id:4} {group_id:4} {file_size:8}  {filename}"
     );
     Ok(())
 }
