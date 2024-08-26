@@ -1,7 +1,5 @@
 # Linux kernel and /sbin/init only system
 
-## Whats this?
-
 This is a minimal example, how can running system with only a Linux kernel and single ELF binary.
 
 ## Why?
