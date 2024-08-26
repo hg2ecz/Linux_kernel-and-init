@@ -4,6 +4,7 @@ use std::fs::{self, read_to_string, DirEntry};
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
+use std::os::unix::prelude::FileTypeExt;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::thread;
@@ -196,6 +197,7 @@ fn listfiles(stream: &mut TcpStream) -> io::Result<()> {
     let mut dirs_to_visit: VecDeque<PathBuf> = VecDeque::new();
     dirs_to_visit.push_back("/".into());
 
+    let _ = writeln!(stream, "   TYPE PERM UID GID    SIZE(kB)  FILENAME");
     while let Some(current_dir) = dirs_to_visit.pop_front() {
         if current_dir == Path::new("/proc") || current_dir == Path::new("/sys") {
             continue;
@@ -220,37 +222,33 @@ fn listfiles(stream: &mut TcpStream) -> io::Result<()> {
 
 fn display_metadata(entry: &DirEntry, stream: &mut TcpStream) -> io::Result<()> {
     let metadata = entry.metadata()?;
+    let ftype = &metadata.file_type();
     let file_type = if metadata.is_dir() {
-        "d"
+        "dir "
     } else if metadata.is_file() {
-        "-"
+        "file"
     } else if metadata.is_symlink() {
-        "l"
+        "link"
+    } else if ftype.is_char_device() {
+        "cdev"
+    } else if ftype.is_block_device() {
+        "bdev"
+    } else if ftype.is_fifo() {
+        "fifo"
+    } else if ftype.is_socket() {
+        "sock"
     } else {
-        "?"
+        "?   "
     };
-
-    // Permissions in numeric form
     let permissions = metadata.permissions().mode() & 0o777;
-
-    // User ID and Group ID
     let user_id = metadata.uid();
     let group_id = metadata.gid();
-
-    // File size
     let file_size = metadata.len();
-
-    // Display the information
     let _ = writeln!(
         stream,
-        "{} {:o} {} {} {} {}",
-        file_type,
-        permissions,
-        user_id,
-        group_id,
-        file_size,
+        "   {file_type} {permissions:o} {user_id:4} {group_id:4} {:6} kB  {}",
+        file_size / 1024,
         entry.path().display()
     );
-
     Ok(())
 }

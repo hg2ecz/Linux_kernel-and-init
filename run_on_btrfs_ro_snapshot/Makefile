@@ -11,7 +11,7 @@ ETH=-netdev bridge,id=net0,br=br0 -device virtio-net-pci,netdev=net0
 
 
 all:
-	cd ../common/ && make && cd ../btrfs_version     # compile "init"
+	cd ../common/ && make                # compile "init"
 	@echo "make firstcreate - for new image"
 	@if [ -e $(IMGFILE) ]; then sudo make copyinit_as_root; fi
 

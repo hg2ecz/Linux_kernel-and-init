@@ -10,7 +10,7 @@ ETH=-netdev bridge,id=net0,br=br0 -device virtio-net-pci,netdev=net0
 
 
 all:
-	cd ../common/ && make && cd ../btrfs_version     # compile "init"
+	cd ../common/ && make                  # compile "init"
 	mkdir -p cdimage/sbin cdimage/proc
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} cdimage/sbin/init
 	mkisofs -input-charset utf-8 -o $(IMGFILE) -V "Test CD" -R cdimage/

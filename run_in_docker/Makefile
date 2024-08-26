@@ -2,7 +2,7 @@ DOCKER_IMGNAME=kernel-initonly
 PROGNAME=init
 
 all:
-	cd ../common/ && make && cd ../docker_version     # compile "init"
+	cd ../common/ && make            # compile "init"
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} init
 	docker build -t $(DOCKER_IMGNAME) .
 

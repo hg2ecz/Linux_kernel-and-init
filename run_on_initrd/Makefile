@@ -8,7 +8,7 @@ BOOTPARAM=-nographic -append "console=ttyS0 rdinit=/sbin/init ip=dhcp" -initrd i
 ETH=-netdev bridge,id=net0,br=br0 -device virtio-net-pci,netdev=net0
 
 all:
-	cd ../common/ && make && cd ../initrd_version     # compile "init"
+	cd ../common/ && make                 # compile "init"
 	mkdir -p initrd/sbin initrd/proc
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} initrd/sbin/init
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
