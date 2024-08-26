@@ -15,16 +15,16 @@ all:
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} cdimage/sbin/init
 	mkisofs -input-charset utf-8 -o $(IMGFILE) -V "Test CD" -R cdimage/
 
-run:
+run_noeth:
 	qemu-system-x86_64 -kernel ../common/kernel/bzImage $(BOOTPARAM) -m 64
 
-run_eth:
+run:
 	sudo qemu-system-x86_64 -kernel ../common/kernel/bzImage $(BOOTPARAM) $(ETH) -m 64
 
-rundeb:
+rundeb_noeth:
 	qemu-system-x86_64 -kernel ../common/kernel/bzImage-debian12 $(BOOTPARAM) -m 128
 
-rundeb_eth:
+rundeb:
 	sudo qemu-system-x86_64 -kernel ../common/kernel/bzImage-debian12 $(BOOTPARAM) $(ETH) -m 128
 
 clean:
