@@ -4,8 +4,7 @@ use std::fs::{self, read_to_string, DirEntry};
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
@@ -89,9 +88,15 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
                         let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
                     }
                     "pwroff" => {
-                        writeln!(stream, "System poweroff ...")?;
-                        stream.shutdown(Shutdown::Both)?;
-                        let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
+                        if Path::new("/.dockerenv").exists() {
+                            writeln!(stream, "Docker \"poweroff\" ...")?;
+                            stream.shutdown(Shutdown::Both)?;
+                            std::process::exit(0);
+                        } else {
+                            writeln!(stream, "System poweroff ...")?;
+                            stream.shutdown(Shutdown::Both)?;
+                            let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
+                        }
                     }
                     "listfiles" => {
                         let _ = listfiles(&mut stream);
