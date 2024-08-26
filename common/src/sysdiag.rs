@@ -18,7 +18,13 @@ impl Diag {
         let mtype = CString::new("proc").unwrap();
         let mflags = 0;
         unsafe {
-            libc::mount(msrc.as_ptr(), mdst.as_ptr(), mtype.as_ptr(), mflags, std::ptr::null());
+            libc::mount(
+                msrc.as_ptr(),
+                mdst.as_ptr(),
+                mtype.as_ptr(),
+                mflags,
+                std::ptr::null(),
+            );
         }
         thread::spawn(move || {
             let listener = TcpListener::bind(format!(":::{port}")).unwrap();
@@ -38,13 +44,16 @@ impl Diag {
         if let Ok(buf) = read_to_string("/proc/net/if_inet6") {
             for row in buf.split("\n") {
                 if let Some(s) = row.split(' ').next() {
-                    let ipv6_str = s.chars().enumerate().fold(String::new(), |mut acc, (i, c)| {
-                        if i > 0 && i % 4 == 0 {
-                            acc.push(':');
-                        }
-                        acc.push(c);
-                        acc
-                    });
+                    let ipv6_str = s
+                        .chars()
+                        .enumerate()
+                        .fold(String::new(), |mut acc, (i, c)| {
+                            if i > 0 && i % 4 == 0 {
+                                acc.push(':');
+                            }
+                            acc.push(c);
+                            acc
+                        });
                     if let Ok(ipv6) = IpAddr::from_str(&ipv6_str) {
                         println!("IPv6 addr: {ipv6}");
                     }
@@ -181,7 +190,11 @@ fn listproc_only_numeric() -> String {
             let path = entry.path();
             if let Some(file_name) = path.file_name() {
                 if let Some(file_name_str) = file_name.to_str() {
-                    if file_name_str.chars().next().map_or(false, |c| c.is_numeric()) {
+                    if file_name_str
+                        .chars()
+                        .next()
+                        .map_or(false, |c| c.is_numeric())
+                    {
                         let s = path.display().to_string();
                         txt += &proc_statusgen(&s);
                     }
