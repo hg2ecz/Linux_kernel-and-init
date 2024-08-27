@@ -14,7 +14,7 @@ pub async fn get_greetings() -> impl Responder {
             <ul>
                 <li><a href="/localfile/hello.html">Hello from localfile</a></li>
                 <li><a href="/sqlfile/hello.html">Hello from SQL</a></li>
-                <li><a href="/tcpfile/hello.html">Hello from TCP</a> - from fileserver, if the daemon is running.</li>
+                <li><a href="/tcpfile/hello.html">Hello from TCP</a> - from a custom TCP fileserver, if the daemon is running.</li>
         </body>
         </html>
         "#,
