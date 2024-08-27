@@ -4,3 +4,5 @@ CREATE TABLE files (
     content LONGBLOB NOT NULL,
     content_type VARCHAR(255) NOT NULL
 );
+
+INSERT INTO `files` VALUES (1,'hello.html','<H1>Hello from MySQL!</H1>','text/html');
