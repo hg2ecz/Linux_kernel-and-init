@@ -1,4 +1,6 @@
 PROGNAME=init
+DOCKER_IMGNAME=kernel-initonly
+
 BOOTPARAM=-nographic -append "console=ttyS0 rdinit=/sbin/init ip=dhcp" -initrd initrd.img -smp 2
 
 # ip link add link enp3s0 name macvtap0 type macvtap mode bridge; ip link set macvtap0 up
@@ -7,7 +9,21 @@ BOOTPARAM=-nographic -append "console=ttyS0 rdinit=/sbin/init ip=dhcp" -initrd i
 # For this *_eth version you need to create a br0 bridge width a dhcp server.
 ETH=-netdev bridge,id=net0,br=br0 -device virtio-net-pci,netdev=net0
 
+
 all:
+	#make build-docker
+	#make run-docker
+	make build-kvm
+	make run
+
+build-docker:
+	#rustup target add x86_64-unknown-linux-musl
+	#cargo build --release --target x86_64-unknown-linux-musl
+	cargo build --release
+	cp -p target/release/${PROGNAME} init
+	docker build -t $(DOCKER_IMGNAME) .
+
+build-kvm:
 	#rustup target add x86_64-unknown-linux-musl
 	#cargo build --release --target x86_64-unknown-linux-musl
 	cargo build --release
@@ -28,6 +44,9 @@ all:
 	cp -p target/release/${PROGNAME} initrd/sbin/init
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
 
+run-docker:
+	 docker run -d -p 7878:7878 $(DOCKER_IMGNAME)
+
 run_noeth:
 	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) -m 64
 
@@ -35,5 +54,11 @@ run:
 	sudo qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(ETH) -m 64
 
 clean:
-	rm -rf initrd initrd.img
+	rm -rf initrd initrd.img init
+	docker ps -a -q --filter ancestor=$(DOCKER_IMGNAME) | xargs -r docker stop
+	docker ps -a -q --filter ancestor=$(DOCKER_IMGNAME) | xargs -r docker rm
+	docker image rm $(DOCKER_IMGNAME)
+
+fullclean:
+	clean
 	cargo clean
