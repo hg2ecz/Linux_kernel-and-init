@@ -207,12 +207,10 @@ fn listfiles(stream: &mut TcpStream) -> io::Result<()> {
         for entry in entries {
             let entry = entry?;
             let path = entry.path();
-
-            if path.is_dir() {
-                // Add the directory to the queue to visit later
+            let metadata = fs::symlink_metadata(entry.path())?;
+            if path.is_dir() && !metadata.file_type().is_symlink() {
                 dirs_to_visit.push_back(path.clone());
             }
-
             display_metadata(&entry, stream)?;
         }
     }
