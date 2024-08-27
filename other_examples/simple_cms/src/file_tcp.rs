@@ -49,18 +49,3 @@ pub async fn get_file(filename: web::Path<String>) -> impl Responder {
         Err(_) => HttpResponse::InternalServerError().body("Error loading file"),
     }
 }
-
-/*
-fn insert_file(pool: &Pool, filename: &str, content: Vec<u8>, content_type: &str) -> Result<()> {
-    let mut conn = pool.get_conn()?;
-    conn.exec_drop(
-        "INSERT INTO files (filename, content, content_type) VALUES (:filename, :content, :content_type)",
-        params! {
-            "filename" => filename,
-            "content" => content,
-            "content_type" => content_type,
-        },
-    )?;
-    Ok(())
-}
-*/
