@@ -11,7 +11,8 @@ struct FileEntry {
 }
 
 fn get_file_from_local(filename: &str) -> Option<FileEntry> {
-    if let Ok(mut f) = File::open(&filename) {
+    let realfile = format!("/webdata/{filename}");
+    if let Ok(mut f) = File::open(&realfile) {
         let mut content = Vec::new();
         f.read_to_end(&mut content).expect("buffer overflow");
 

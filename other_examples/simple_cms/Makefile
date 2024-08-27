@@ -42,7 +42,9 @@ build-kvm:
 	cp -p /lib64/ld-linux-x86-64.so.2 initrd/lib/
 
 	cp -p target/release/${PROGNAME} initrd/sbin/init
+	cp -r webdata initrd/
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
+
 
 run-docker:
 	 docker run -d -p 7878:7878 $(DOCKER_IMGNAME)
