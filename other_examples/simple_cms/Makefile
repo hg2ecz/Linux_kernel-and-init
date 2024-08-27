@@ -28,10 +28,10 @@ all:
 	cp -p target/release/${PROGNAME} initrd/sbin/init
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
 
-run:
+run_noeth:
 	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) -m 64
 
-run_eth:
+run:
 	sudo qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(ETH) -m 64
 
 clean:
