@@ -22,3 +22,7 @@ It serve some status information in a TCP port.
 For shutdown this VM:
 
     $ echo "pwroff" | nc IPv4_or_IPv6_addr 7878
+
+If you don't have a SLAAC router (qemu bridge interface is docker0):
+
+    $ echo -e "meminfo\n quit" | nc fe80::5054:ff:fe12:3456%docker0 7878
