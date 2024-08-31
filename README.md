@@ -23,6 +23,14 @@ For shutdown this VM:
 
     $ echo "pwroff" | nc IPv4_or_IPv6_addr 7878
 
-If you don't have a SLAAC router (qemu bridge interface is docker0):
+## If you don't have a SLAAC router and DHCPv4 support
+
+One of my tests I use the docker0 bridge interface for qemu. You can connect via the link local interface, but you have to give the name of interface.
 
     $ echo -e "meminfo\n quit" | nc fe80::5054:ff:fe12:3456%docker0 7878
+
+For IPv4 DHCP, the udhcpd is the simplest way on host Linux.
+
+    $ sudo apt install udhcpd
+    # edit /etc/udhcpd/conf (interface docker0) and the /etc/default/udhcp (no -> yes)
+    $ sudo systemctl restart udhcpd
