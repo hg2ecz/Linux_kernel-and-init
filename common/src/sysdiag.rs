@@ -20,11 +20,14 @@ impl Diag {
         unsafe {
             libc::mount(msrc.as_ptr(), mdst.as_ptr(), mtype.as_ptr(), mflags, std::ptr::null());
         }
+        thread::spawn(move || loop {
+            handle_stdio();
+        });
         thread::spawn(move || {
             let listener = TcpListener::bind(format!(":::{port}")).unwrap();
 
             for tcpstream in listener.incoming() {
-                let _ = handle_client(tcpstream.unwrap());
+                let _ = handle_tcp_client(tcpstream.unwrap());
             }
         });
 
@@ -56,21 +59,69 @@ impl Diag {
     }
 }
 
-fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
+static VALID_COMMANDS: [&str; 9] = [
+    "meminfo",
+    "loadavg",
+    "proc",
+    "mounts",
+    "listfiles",
+    "version",
+    "reboot",
+    "pwroff",
+    "quit",
+];
+
+fn handle_stdio() {
+    let validcmd = VALID_COMMANDS.join(" ");
+    println!("{validcmd}");
+    let mut buf = String::new();
+
+    loop {
+        buf.clear();
+        io::stdin().read_line(&mut buf).expect("Failed to read line");
+        let cmd = buf.trim();
+        match cmd {
+            "proc" => {
+                println!("{}", listproc_only_numeric());
+            }
+            "reboot" => {
+                println!("System reboot ...");
+                let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
+            }
+            "pwroff" => {
+                if Path::new("/.dockerenv").exists() {
+                    println!("Docker \"poweroff\" ...");
+                    std::process::exit(0);
+                } else {
+                    println!("System poweroff ...");
+                    let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
+                }
+            }
+            "listfiles" => {
+                // let _ = listfiles(&mut stream);
+                println!("Implemented only on TCP/IP.");
+            }
+            "quit" => {
+                break;
+            }
+            _ => {
+                if VALID_COMMANDS.contains(&cmd) {
+                    if let Ok(buf) = fs::read_to_string(format!("/proc/{cmd}")) {
+                        println!("{buf}");
+                    }
+                } else {
+                    println!("Unknown command: {cmd}\nValid commands: {validcmd}");
+                }
+            }
+        }
+    }
+}
+
+fn handle_tcp_client(stream: TcpStream) -> Result<(), std::io::Error> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut stream = stream; // Now we have a separate mutable stream for writing
-    let valid_commands = [
-        "meminfo",
-        "loadavg",
-        "proc",
-        "mounts",
-        "listfiles",
-        "version",
-        "reboot",
-        "pwroff",
-        "quit",
-    ];
-    writeln!(stream, "{}", valid_commands.join(" "))?;
+    let validcmd = VALID_COMMANDS.join(" ");
+    writeln!(stream, "{validcmd}")?;
 
     loop {
         let mut buf = String::new();
@@ -106,12 +157,12 @@ fn handle_client(stream: TcpStream) -> Result<(), std::io::Error> {
                         break;
                     }
                     _ => {
-                        if valid_commands.contains(&cmd) {
+                        if VALID_COMMANDS.contains(&cmd) {
                             if let Ok(buf) = fs::read_to_string(format!("/proc/{cmd}")) {
                                 writeln!(stream, "{buf}")?;
                             }
                         } else {
-                            writeln!(stream, "Unknown command: {cmd}")?;
+                            writeln!(stream, "Unknown command: {cmd}\nValid commands: {validcmd}")?;
                         }
                     }
                 }
