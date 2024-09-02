@@ -36,7 +36,7 @@ docker-build:
 	docker build -t $(DOCKER_IMGNAME) .
 
 docker-run:
-	 docker run -d -p 7878:7878 -p 8080:8080 $(DOCKER_IMGNAME) -i
+	docker run -d -p 7878:7878 -p 8080:8080 $(DOCKER_IMGNAME)
 
 run:
 	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(USERNET) -m 128
