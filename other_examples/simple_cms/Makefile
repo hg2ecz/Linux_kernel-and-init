@@ -2,12 +2,10 @@ PROGNAME=init
 DOCKER_IMGNAME=kernel-initonly
 
 BOOTPARAM=-nographic -append "console=ttyS0 rdinit=/sbin/init ip=dhcp" -initrd initrd.img -smp 2
+BOOTPARAM+=-device virtio-net-pci,netdev=net0
 
-# ip link add link enp3s0 name macvtap0 type macvtap mode bridge; ip link set macvtap0 up
-#ETH=-netdev tap,id=tap0,ifname=tap0,script=no,downscript=no,vhost=on -device virtio-net-pci,netdev=tap0,mac=52:54:00:12:34:56
-
-# For this *_eth version you need to create a br0 bridge width a dhcp server.
-ETH=-netdev bridge,id=net0,br=br0 -device virtio-net-pci,netdev=net0
+USERNET=-netdev user,id=net0,hostfwd=tcp::7878-:7878,hostfwd=tcp::8080-:8080,
+BRIDGE=-netdev bridge,id=net0,br=br0
 
 
 all:
@@ -38,11 +36,11 @@ docker-build:
 docker-run:
 	 docker run -d -p 7878:7878 -p 8080:8080 $(DOCKER_IMGNAME) -i
 
-run_noeth:
-	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) -m 64
-
 run:
-	sudo qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(ETH) -m 64
+	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(USERNET) -m 64
+
+run-bridge:
+	sudo qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(BRIDGE) -m 64
 
 clean:
 	rm -rf lib lib64 initrd initrd.img init
