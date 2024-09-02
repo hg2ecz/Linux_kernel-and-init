@@ -10,12 +10,13 @@ DOCKER_IMGNAME=kernel-initonly
 all:
 	cd ../common/ && cargo build --release
 	mkdir -p initrd/lib initrd/lib64 initrd/sbin initrd/proc
+	cp -p ../common/target/release/${PROGNAME} initrd/sbin/init
 
+	ldd initrd/sbin/init  # debug
 	cp -p /lib/x86_64-linux-gnu/libgcc_s.so.1 initrd/lib/
 	cp -p /lib/x86_64-linux-gnu/libc.so.6 initrd/lib/
 	cp -p /lib64/ld-linux-x86-64.so.2 initrd/lib64/
 
-	cp -p ../common/target/release/${PROGNAME} initrd/sbin/init
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
 
 run:

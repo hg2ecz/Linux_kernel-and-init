@@ -30,6 +30,7 @@ firstcreate_as_root:
 copyinit_as_root:
 	if [ $(shell mountpoint -q /mnt; echo $$?) -ne 0 ]; then mount -o loop $(IMGFILE) /mnt; fi
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} /mnt/sbin/init
+	ldd /mnt/sbin/init  # debug
 	if [ -e /mnt/$(RTSNAPSHOT) ]; then btrfs subvolume delete /mnt/$(RTSNAPSHOT); fi
 	btrfs subvolume snapshot -r /mnt/ /mnt/$(RTSNAPSHOT)
 	umount /mnt

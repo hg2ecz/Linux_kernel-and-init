@@ -11,6 +11,7 @@ all:
 	cd ../common/ && make                  # compile "init"
 	mkdir -p cdimage/sbin cdimage/proc
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} cdimage/sbin/init
+	ldd cdimage/sbin/init  # debug
 	mkisofs -input-charset utf-8 -o $(IMGFILE) -V "Test CD" -R cdimage/
 
 run:

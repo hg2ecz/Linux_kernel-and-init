@@ -4,6 +4,7 @@ PROGNAME=init
 all:
 	cd ../common/ && make            # compile "init"
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} init
+	ldd ./init  # debug
 	docker build -t $(DOCKER_IMGNAME) .
 
 run:
