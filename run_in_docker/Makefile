@@ -8,7 +8,7 @@ all:
 	docker build -t $(DOCKER_IMGNAME) .
 
 run:
-	 docker run -d -p 7878:7878 $(DOCKER_IMGNAME)
+	docker run -p 7878:7878 -i $(DOCKER_IMGNAME) --cpus=2 -m 64M
 
 clean:
 	rm -f init

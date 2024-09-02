@@ -79,6 +79,10 @@ fn handle_stdio() {
     loop {
         buf.clear();
         io::stdin().read_line(&mut buf).expect("Failed to read line");
+        if buf.len() == 0 {
+            println!("Zero byte from stdin. Exit from the stdin handler.");
+            std::process::exit(0);
+        }
         let cmd = buf.trim();
         match cmd {
             "proc" => {
@@ -110,7 +114,7 @@ fn handle_stdio() {
                         println!("{buf}");
                     }
                 } else {
-                    println!("Unknown command: {cmd}\nValid commands: {validcmd}");
+                    println!("Unknown command: \"{cmd}\"\nValid commands: {validcmd}");
                 }
             }
         }
@@ -162,7 +166,7 @@ fn handle_tcp_client(stream: TcpStream) -> Result<(), std::io::Error> {
                                 writeln!(stream, "{buf}")?;
                             }
                         } else {
-                            writeln!(stream, "Unknown command: {cmd}\nValid commands: {validcmd}")?;
+                            writeln!(stream, "Unknown command: \"{cmd}\"\nValid commands: {validcmd}")?;
                         }
                     }
                 }
