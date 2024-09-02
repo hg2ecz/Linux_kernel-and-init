@@ -14,6 +14,7 @@ all:
 	cargo build --release
 
 	mkdir -p initrd/lib initrd/lib64 initrd/sbin initrd/proc initrd/run
+	##if [ ! -e initrd/lib64 ]; then ln -s lib initrd/lib64; fi
 
 	# see ldd target/release/init
 	#cp -p /lib/linux-vdso.so.1 initrd/lib/ -- from kernel
@@ -23,7 +24,8 @@ all:
 	cp -p /lib/x86_64-linux-gnu/libgcc_s.so.1 initrd/lib/
 	cp -p /lib/x86_64-linux-gnu/libm.so.6 initrd/lib/
 	cp -p /lib/x86_64-linux-gnu/libc.so.6 initrd/lib/
-	cp -p /lib64/ld-linux-x86-64.so.2 initrd/lib64/
+	cp -p /lib/x86_64-linux-gnu/libzstd.so.1 initrd/lib/
+	cp -p /lib64/ld-linux-x86-64.so.2 initrd/lib64/       # lib64 !!
 
 	cp -p target/release/${PROGNAME} initrd/sbin/init
 	cp -r webdata initrd/
@@ -37,7 +39,7 @@ docker-run:
 	 docker run -d -p 7878:7878 -p 8080:8080 $(DOCKER_IMGNAME) -i
 
 run:
-	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(USERNET) -m 64
+	qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(USERNET) -m 128
 
 run-bridge:
 	sudo qemu-system-x86_64 -kernel ../../common/kernel/bzImage $(BOOTPARAM) $(BRIDGE) -m 64
