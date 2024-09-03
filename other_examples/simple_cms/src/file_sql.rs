@@ -7,8 +7,13 @@ use actix_web::{web, HttpResponse, Responder};
 const DATABASE_URL: &str = "mysql://test:testpwd@[fd73::d250:99ff:fe59:e012]/test";
 // const DATABASE_URL: &str = "mysql://test:testpwd@192.168.233.206/test";
 
-pub fn sql_init() -> Pool {
-    Pool::new(DATABASE_URL).expect("Failed to create MySQL connection pool")
+pub fn sql_init() -> Option<Pool> {
+    if let Ok(pool) = Pool::new(DATABASE_URL) {
+        Some(pool)
+    } else {
+        eprintln!("Failed to create MySQL connection pool");
+        None
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -38,13 +43,17 @@ fn get_file_from_db(pool: &Pool, filename: &str) -> Result<Option<FileEntry>> {
     }
 }
 
-pub async fn get_file(pool: web::Data<Pool>, filename: web::Path<String>) -> impl Responder {
-    match get_file_from_db(&pool, &filename) {
-        Ok(Some(file_entry)) => HttpResponse::Ok()
-            .insert_header(ContentType(file_entry.content_type.parse().unwrap()))
-            .body(file_entry.content),
-        Ok(None) => HttpResponse::NotFound().body("File not found"),
-        Err(_) => HttpResponse::InternalServerError().body("Error loading file"),
+pub async fn get_file(pool_in: web::Data<Option<Pool>>, filename: web::Path<String>) -> impl Responder {
+    if let Some(pool) = pool_in.get_ref() {
+        match get_file_from_db(&pool, &filename) {
+            Ok(Some(file_entry)) => HttpResponse::Ok()
+                .insert_header(ContentType(file_entry.content_type.parse().unwrap()))
+                .body(file_entry.content),
+            Ok(None) => HttpResponse::NotFound().body("File not found"),
+            Err(_) => HttpResponse::InternalServerError().body("Error loading file"),
+        }
+    } else {
+        HttpResponse::InternalServerError().body("Mysql connect error.")
     }
 }
 

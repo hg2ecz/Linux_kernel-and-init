@@ -59,17 +59,7 @@ impl Diag {
     }
 }
 
-static VALID_COMMANDS: [&str; 9] = [
-    "meminfo",
-    "loadavg",
-    "proc",
-    "mounts",
-    "listfiles",
-    "version",
-    "reboot",
-    "pwroff",
-    "quit",
-];
+static VALID_COMMANDS: [&str; 7] = ["proc", "listfiles", "rlimits", "reboot", "pwroff", "quit", "<files_in_proc>"];
 
 fn handle_stdio() {
     let validcmd = VALID_COMMANDS.join(" ");
@@ -88,6 +78,13 @@ fn handle_stdio() {
             "proc" => {
                 println!("{}", listproc_only_numeric());
             }
+            "listfiles" => {
+                // let _ = listfiles(&mut stream);
+                println!("Implemented only on TCP/IP.");
+            }
+            "rlimits" => {
+                println!("{}", get_rlimits());
+            }
             "reboot" => {
                 println!("System reboot ...");
                 let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_RESTART) };
@@ -101,20 +98,16 @@ fn handle_stdio() {
                     let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
                 }
             }
-            "listfiles" => {
-                // let _ = listfiles(&mut stream);
-                println!("Implemented only on TCP/IP.");
-            }
             "quit" => {
                 break;
             }
             _ => {
-                if VALID_COMMANDS.contains(&cmd) {
+                if !cmd.contains("/") && cmd != "kcore" {
                     if let Ok(buf) = fs::read_to_string(format!("/proc/{cmd}")) {
                         println!("{buf}");
+                    } else {
+                        println!("Unknown command: \"{cmd}\"\nValid commands: {validcmd}");
                     }
-                } else {
-                    println!("Unknown command: \"{cmd}\"\nValid commands: {validcmd}");
                 }
             }
         }
@@ -137,6 +130,12 @@ fn handle_tcp_client(stream: TcpStream) -> Result<(), std::io::Error> {
                     "proc" => {
                         writeln!(stream, "{}", listproc_only_numeric())?;
                     }
+                    "listfiles" => {
+                        let _ = listfiles(&mut stream);
+                    }
+                    "rlimits" => {
+                        writeln!(stream, "{}", get_rlimits())?;
+                    }
                     "reboot" => {
                         writeln!(stream, "System reboot ...")?;
                         stream.shutdown(Shutdown::Both)?;
@@ -153,18 +152,13 @@ fn handle_tcp_client(stream: TcpStream) -> Result<(), std::io::Error> {
                             let _ = unsafe { libc::reboot(libc::LINUX_REBOOT_CMD_POWER_OFF) };
                         }
                     }
-                    "listfiles" => {
-                        let _ = listfiles(&mut stream);
-                    }
                     "quit" => {
                         stream.shutdown(Shutdown::Both)?;
                         break;
                     }
                     _ => {
-                        if VALID_COMMANDS.contains(&cmd) {
-                            if let Ok(buf) = fs::read_to_string(format!("/proc/{cmd}")) {
-                                writeln!(stream, "{buf}")?;
-                            }
+                        if let Ok(buf) = fs::read_to_string(format!("/proc/{cmd}")) {
+                            writeln!(stream, "{buf}")?;
                         } else {
                             writeln!(stream, "Unknown command: \"{cmd}\"\nValid commands: {validcmd}")?;
                         }
@@ -312,4 +306,29 @@ fn display_metadata(entry: &DirEntry, stream: &mut TcpStream) -> io::Result<()> 
         "   {file_type} {permissions:o} {user_id:4} {group_id:4} {file_size:8}  {filename}"
     );
     Ok(())
+}
+
+fn get_lim(resource: u32, name: &str) -> String {
+    let mut limit = libc::rlimit {
+        rlim_cur: 0, // Current (soft) limit
+        rlim_max: 0, // Maximum (hard) limit
+    };
+    let result = unsafe { libc::getrlimit(resource, &mut limit) };
+
+    if result == 0 {
+        format!("{name}: soft limit = {}, hard limit = {}\n", limit.rlim_cur, limit.rlim_max)
+    } else {
+        format!("Failed to get {} limits\n", name)
+    }
+}
+
+fn get_rlimits() -> String {
+    let mut res = String::new();
+    res += &get_lim(libc::RLIMIT_NOFILE, "RLIMIT_NOFILE");
+    res += &get_lim(libc::RLIMIT_AS, "RLIMIT_AS");
+    res += &get_lim(libc::RLIMIT_CPU, "RLIMIT_CPU");
+    res += &get_lim(libc::RLIMIT_DATA, "RLIMIT_DATA");
+    res += &get_lim(libc::RLIMIT_NOFILE, "RLIMIT_NOFILE");
+    res += &get_lim(libc::RLIMIT_NPROC, "RLIMIT_NPROC");
+    res
 }
