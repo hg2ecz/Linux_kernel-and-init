@@ -308,7 +308,13 @@ fn display_metadata(entry: &DirEntry, stream: &mut TcpStream) -> io::Result<()> 
     Ok(())
 }
 
-fn get_lim(resource: u32, name: &str) -> String {
+#[cfg(target_env = "musl")]
+type RlimT = i32;
+
+#[cfg(not(target_env = "musl"))]
+type RlimT = u32;
+
+fn get_lim(resource: RlimT, name: &str) -> String {
     let mut limit = libc::rlimit {
         rlim_cur: 0, // Current (soft) limit
         rlim_max: 0, // Maximum (hard) limit
