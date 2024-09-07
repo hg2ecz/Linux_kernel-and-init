@@ -9,8 +9,8 @@ BRIDGE=-netdev bridge,id=net0,br=br0
 all:
 	cd ../common/ && make                 # compile "init"
 	mkdir -p initrd/sbin initrd/proc
-	ldd initrd/sbin/init  # debug
 	cp -p ../common/target/x86_64-unknown-linux-musl/release/${PROGNAME} initrd/sbin/init
+	ldd initrd/sbin/init  # debug
 	cd initrd && find . | cpio -H newc -o | zstd > ../initrd.img && cd ..
 
 run:
