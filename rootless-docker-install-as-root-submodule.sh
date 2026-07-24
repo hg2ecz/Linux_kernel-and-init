@@ -3,7 +3,7 @@
 USER_NAME="$1"
 
 apt update
-apt install -y docker.io rootlesskit uidmap slirp4netns dbus-user-session
+apt install -y docker.io docker-compose docker-buildx rootlesskit uidmap slirp4netns dbus-user-session
 
 systemctl disable --now docker.service docker.socket
 
