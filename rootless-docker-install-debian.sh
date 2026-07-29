@@ -17,4 +17,5 @@ PATH=$PATH:/usr/share/docker.io/contrib/ dockerd-rootless-setuptool.sh install -
 LINE_TO_ADD='export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"'
 if ! grep -Fxq "$LINE_TO_ADD" "$HOME/.bashrc"; then
     echo -e "\n$LINE_TO_ADD" >> "$HOME/.bashrc"
+    echo -e "To update your current terminal, run:\n\n  source ~/.bashrc\n"
 fi
